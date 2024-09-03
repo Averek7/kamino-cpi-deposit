@@ -132,6 +132,7 @@ pub struct ExecuteKaminoOperations<'info> {
     pub obligation_owner: Signer<'info>,
     #[account(mut)]
     pub fee_payer: Signer<'info>,
+    ///CHECK
     #[account(mut)]
     pub obligation: AccountInfo<'info>,
     #[account(mut)]
