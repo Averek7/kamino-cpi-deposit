@@ -212,7 +212,7 @@ fn init_obligation_instruction(
             AccountMeta::new_readonly(accounts.rent.key(), false),
             AccountMeta::new_readonly(accounts.system_program.key(), false),
         ],
-        data: vec![0, 0],
+        data: vec![0x00],
     }
 }
 
@@ -235,7 +235,7 @@ fn init_obligation_farms_for_reserve_instruction(
             AccountMeta::new_readonly(accounts.rent.key(), false),
             AccountMeta::new_readonly(accounts.system_program.key(), false),
         ],
-        data: vec![0, 1],
+        data: vec![0x01],
     }
 }
 
@@ -253,7 +253,7 @@ fn refresh_reserve_instruction(
             AccountMeta::new(accounts.switchboard_twap_oracle.key(), false),
             AccountMeta::new(accounts.scope_prices.key(), false),
         ],
-        data: vec![1],
+        data: vec![0x02],
     }
 }
 
@@ -267,7 +267,7 @@ fn refresh_obligation_instruction(
             AccountMeta::new(accounts.lending_market.key(), false),
             AccountMeta::new(accounts.obligation.key(), false),
         ],
-        data: vec![2],
+        data: vec![0x03],
     }
 }
 
@@ -289,7 +289,7 @@ fn refresh_obligation_farms_for_reserve_instruction(
             AccountMeta::new_readonly(accounts.rent.key(), false),
             AccountMeta::new_readonly(accounts.system_program.key(), false),
         ],
-        data: vec![3],
+        data: vec![0x05],
     }
 }
 
@@ -319,6 +319,10 @@ fn deposit_reserve_liquidity_and_obligation_collateral_instruction(
             AccountMeta::new_readonly(accounts.liquidity_token_program.key(), false),
             AccountMeta::new_readonly(accounts.instruction_sysvar.key(), false),
         ],
-        data: vec![4, amount as u8],
+        data: {
+            let mut data = vec![0x04];
+            data.extend_from_slice(&amount.to_le_bytes());
+            data
+        },
     }
 }
