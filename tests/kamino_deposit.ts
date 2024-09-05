@@ -65,17 +65,21 @@ describe("Exec Kamino", () => {
         ...kaminoAction.lendingIxs,
         ...kaminoAction.cleanupIxs,
       ];
+      // fs.writeFileSync('kaminoAction.json', JSON.stringify(allInstructions, null, 2));
 
-      // fs.writeFileSync('kaminoAction.json', JSON.stringify(kaminoAction, null, 2));
+      //Handling only kamino program ixs for now
+      const kaminoIxs = allInstructions.filter((ix) =>
+        ix.programId.equals(KAMINO_PROGRAM)
+      );
 
-      //TODO: Filter out unique accounts
-      const allAccountMetas = allInstructions.flatMap((ix) => ix.keys);
+      //TODO: Filter unique accounts
+      const allAccountMetas = kaminoIxs.flatMap((ix) => ix.keys);
 
-      const instructionDatas = allInstructions.map((ix) => ix.data);
+      const ixDatas = kaminoIxs.map((ix) => ix.data);
 
       // Send transaction using anchor program
       const txn = await program.methods
-        .executeKaminoOperations(instructionDatas)
+        .executeKaminoOperations({ ixDatas })
         .accounts({
           kaminoFarm: FARM,
           kaminoProgram: KAMINO_PROGRAM,
