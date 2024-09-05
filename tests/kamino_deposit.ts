@@ -1,65 +1,202 @@
-import * as anchor from '@coral-xyz/anchor';
-import { SystemProgram, Keypair, PublicKey } from '@solana/web3.js';
-import { assert } from 'chai';
+import { assert } from "chai";
+import { Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import * as anchor from "@coral-xyz/anchor";
+import {
+  KaminoMarket,
+  KaminoAction,
+  VanillaObligation,
+  PROGRAM_ID,
+  getAssociatedTokenAddress,
+} from "@kamino-finance/klend-sdk";
+import { BN } from "@coral-xyz/anchor";
+import { KaminoDeposit } from "../target/types/kamino_deposit";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  Token,
+} from "@solana/spl-token";
 
-anchor.setProvider(anchor.AnchorProvider.env());
+const provider = anchor.AnchorProvider.env();
+anchor.setProvider(provider);
+const MAINNET_LENDING_MARKET = new PublicKey(
+  "7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF"
+);
 
-const idl = require('../target/idl/kamino_deposit.json');
-const programId = new PublicKey('EQ4ZfkAaGPuuVGkaBUhdSi4QQ6RdkxNWQ8eCU96x2dQU'); 
-const program = new anchor.Program(idl, programId);
+describe("Kamino Operations", () => {
+  const depositAmount = new BN(1 * 10 ** 9);
+  let program: anchor.Program<KaminoDeposit>;
+  let payer: Keypair;
+  let obligation: Keypair;
+  let reserve: Keypair;
+  let reserveFarmState: Keypair;
+  let obligationFarm: Keypair;
+  let ownerUserMetadata: Keypair;
+  let instrutionSysvar: Keypair;
+  let obligationFarmUserState: Keypair;
+  let reserveLiquidityMint: Keypair;
+  let reserveCollateralMint: Keypair;
+  let reserveLiquiditySupply: PublicKey;
+  let reserveDestinationDepositCollateral: PublicKey;
+  let userSourceLiquidity: PublicKey;
+  let placeholderUserDestinationCollateral: PublicKey;
 
-// Helper function to generate a keypair and fund it
-async function createAccount(connection: anchor.web3.Connection, payer: anchor.web3.Keypair) {
-    const account = anchor.web3.Keypair.generate();
-    const tx = await connection.requestAirdrop(account.publicKey, 2 * anchor.web3.LAMPORTS_PER_SOL);
-    await connection.confirmTransaction(tx);
-    return account;
-}
+  before(async () => {
+    // Initialize variables before running tests
+    program = anchor.workspace.KaminoDeposit as anchor.Program<KaminoDeposit>;
+    payer = Keypair.generate();
+    obligation = Keypair.generate();
+    reserve = Keypair.generate();
+    reserveFarmState = Keypair.generate();
+    obligationFarm = Keypair.generate();
+    ownerUserMetadata = Keypair.generate();
+    instrutionSysvar = Keypair.generate();
+    obligationFarmUserState = Keypair.generate();
+    reserveLiquidityMint = Keypair.generate();
+    reserveCollateralMint = Keypair.generate();
 
-describe('kamino_deposit', () => {
-    let provider: anchor.AnchorProvider;
-    let payer: anchor.web3.Keypair;
-    let obligation: anchor.web3.Keypair;
-    let lendingMarket: anchor.web3.Keypair;
-    let reserve: anchor.web3.Keypair;
+    // Set up token accounts
+    reserveLiquiditySupply = await createTokenAccount(
+      provider.connection,
+      payer,
+      reserveLiquidityMint.publicKey,
+      payer.publicKey
+    );
 
-    before(async () => {
-        provider = anchor.AnchorProvider.env();
-        payer = new Keypair();
+    reserveDestinationDepositCollateral = await createTokenAccount(
+      provider.connection,
+      payer,
+      reserveCollateralMint.publicKey,
+      payer.publicKey
+    );
 
-        // Initialize accounts
-        obligation = await createAccount(provider.connection, payer);
-        lendingMarket = await createAccount(provider.connection, payer);
-        reserve = await createAccount(provider.connection, payer);
+    userSourceLiquidity = await createTokenAccount(
+      provider.connection,
+      payer,
+      reserveLiquidityMint.publicKey,
+      provider.wallet.publicKey
+    );
 
-    });
+    placeholderUserDestinationCollateral = await createTokenAccount(
+      provider.connection,
+      payer,
+      reserveCollateralMint.publicKey,
+      provider.wallet.publicKey
+    );
+  });
 
-    it('should execute Kamino operations correctly', async () => {
-        const amount = new anchor.BN(5000000); 
+  it("should execute Kamino operations", async () => {
+    const kaminoMarket = await KaminoMarket.load(
+      provider.connection,
+      MAINNET_LENDING_MARKET,
+      10000
+    );
 
-        try {
-            // Execute the Kamino operations
-            await program.rpc.executeKaminoOperations(amount, {
-                accounts: {
-                    obligationOwner: payer.publicKey,
-                    feePayer: payer.publicKey,
-                    obligation: obligation.publicKey,
-                    lendingMarket: lendingMarket.publicKey,
-                    reserve: reserve.publicKey,
-                    // Add other accounts here as per your contract requirements
-                },
-                signers: [payer],
-            });
-            console.log('Transaction successful!');
-        } catch (err) {
-            console.error('Error executing Kamino operations:', err);
-            assert.fail('Transaction failed');
-        }
+    assert.isNotNull(kaminoMarket, "Kamino Market not found!");
 
-        const obligationAccount = await program.account.obligation.fetch(obligation.publicKey);
-        console.log('Obligation Account State:', obligationAccount);
+    const kaminoAction = await KaminoAction.buildDepositTxns(
+      kaminoMarket,
+      depositAmount,
+      new PublicKey("So11111111111111111111111111111111111111112"),
+      provider.wallet.publicKey,
+      new VanillaObligation(PROGRAM_ID)
+    );
 
-        assert.isOk(obligationAccount, 'Obligation account should be initialized');
-    });
+    const allInstructions = [
+      ...kaminoAction.setupIxs,
+      ...kaminoAction.lendingIxs,
+      ...kaminoAction.cleanupIxs,
+    ];
 
+    const tx = await program.methods
+      .executeKaminoOperations(depositAmount)
+      .accounts({
+        obligationOwner: provider.wallet.publicKey,
+        feePayer: payer.publicKey,
+        obligation: obligation.publicKey,
+        lendingMarket: MAINNET_LENDING_MARKET,
+        lendingMarketAuthority: new PublicKey(
+          "9DrvZvyWh1HuAoZxvYWMvkf2XCzryCpGgHqrMjyDWpmo"
+        ),
+        ownerUserMetadata: ownerUserMetadata.publicKey,
+        reserve: reserve.publicKey,
+        reserveFarmState: reserveFarmState.publicKey,
+        obligationFarm: obligationFarm.publicKey,
+        farmsProgram: new PublicKey(
+          "FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr"
+        ),
+        reserveLiquidityMint: reserveLiquidityMint.publicKey,
+        reserveLiquiditySupply: reserveLiquiditySupply,
+        reserveCollateralMint: reserveCollateralMint.publicKey,
+        reserveDestinationDepositCollateral:
+          reserveDestinationDepositCollateral,
+        userSourceLiquidity: userSourceLiquidity,
+        placeholderUserDestinationCollateral:
+          placeholderUserDestinationCollateral,
+        collateralTokenProgram: new PublicKey(
+          "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ),
+        liquidityTokenProgram: new PublicKey(
+          "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ),
+        instructionSysvar: instrutionSysvar.publicKey,
+        kaminoProgram: new PublicKey(
+          "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"
+        ),
+        crank: provider.wallet.publicKey,
+        obligationFarmUserState: obligationFarmUserState.publicKey,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .remainingAccounts(
+        allInstructions.map((ix) => ({
+          pubkey: ix.programId,
+          isSigner: false,
+          isWritable: false,
+        }))
+      )
+      .signers([payer])
+      .rpc();
+
+    assert.isNotNull(tx, "Transaction failed");
+    console.log("Transaction Signature:", tx);
+  });
 });
+
+async function createTokenAccount(
+  connection: anchor.web3.Connection,
+  payer: Keypair,
+  mint: PublicKey,
+  owner: PublicKey
+): Promise<PublicKey> {
+  const associatedTokenAccount = await getAssociatedTokenAddress(
+    mint,
+    owner,
+    true,
+    TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+
+  // Check if the account already exists
+  const accountInfo = await connection.getAccountInfo(associatedTokenAccount);
+  if (!accountInfo) {
+    // Create the associated token account instruction
+    const transaction = new Transaction().add(
+      Token.createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        associatedTokenAccount,
+        owner,
+        mint,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
+    );
+
+    // Send the transaction to the blockchain and confirm it
+    await connection.sendTransaction(transaction, [payer], {
+      skipPreflight: false,
+      preflightCommitment: "singleGossip",
+    });
+  }
+
+  return associatedTokenAccount;
+}

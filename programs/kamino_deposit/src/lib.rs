@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::instruction::Instruction};
 use anchor_spl::token::{Token, TokenAccount};
 
-declare_id!("EQ4ZfkAaGPuuVGkaBUhdSi4QQ6RdkxNWQ8eCU96x2dQU");
+declare_id!("3utsE5Tn24ZPKRGti1Nc45gBAcAdNBPybgnP59P8YYFd");
 
 #[program]
 pub mod kamino_deposit {
