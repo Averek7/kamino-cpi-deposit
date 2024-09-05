@@ -6,13 +6,16 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-kamino_deposit = "3utsE5Tn24ZPKRGti1Nc45gBAcAdNBPybgnP59P8YYFd"
+kamino_deposit = "HcxtR55Ec4XQPt47SckxG6RMoWyFAEbSYn5BTmVX7DEE"
+
+[programs.devnet]
+kamino_deposit = "HcxtR55Ec4XQPt47SckxG6RMoWyFAEbSYn5BTmVX7DEE"
 
 [registry]
-url = "https://api.apr.dev"
+url = "https://api.devnet.solana.com"
 
 [provider]
-cluster = "Localnet"
+cluster = "Devnet"
 wallet = "/home/averek/.config/solana/id.json"
 
 [test]

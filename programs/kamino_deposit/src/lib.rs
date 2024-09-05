@@ -1,7 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::instruction::Instruction};
-use anchor_spl::token::{Token, TokenAccount};
 
-declare_id!("3utsE5Tn24ZPKRGti1Nc45gBAcAdNBPybgnP59P8YYFd");
+declare_id!("HcxtR55Ec4XQPt47SckxG6RMoWyFAEbSYn5BTmVX7DEE");
 
 #[program]
 pub mod kamino_deposit {
@@ -13,19 +12,21 @@ pub mod kamino_deposit {
         ctx: Context<ExecuteKaminoOperations>,
         amount: u64,
     ) -> Result<()> {
+        let accounts = &ctx.remaining_accounts;
+
         // Step 1: Init Obligation
         invoke(
-            &init_obligation_instruction(&ctx.accounts.kamino_program.key(), &ctx.accounts),
+            &init_obligation_instruction(&ctx.accounts.kamino_program.key(), accounts, amount),
             &[
-                ctx.accounts.obligation_owner.to_account_info(),
-                ctx.accounts.fee_payer.to_account_info(),
-                ctx.accounts.obligation.to_account_info(),
-                ctx.accounts.lending_market.to_account_info(),
-                ctx.accounts.system_program.to_account_info(), // Seed 1 Account
-                ctx.accounts.system_program.to_account_info(), // Seed 2 Account
-                ctx.accounts.owner_user_metadata.to_account_info(),
-                ctx.accounts.rent.to_account_info(),
-                ctx.accounts.system_program.to_account_info(),
+                accounts[0].clone(),
+                accounts[1].clone(),
+                accounts[2].clone(),
+                accounts[3].clone(),
+                accounts[4].clone(),
+                accounts[5].clone(),
+                accounts[6].clone(),
+                accounts[7].clone(),
+                accounts[8].clone(),
             ],
         )?;
 
@@ -33,71 +34,64 @@ pub mod kamino_deposit {
         invoke(
             &init_obligation_farms_for_reserve_instruction(
                 &ctx.accounts.kamino_farm.key(),
-                &ctx.accounts,
+                accounts,
+                0,
             ),
             &[
-                ctx.accounts.payer.to_account_info(),
-                ctx.accounts.owner.to_account_info(),
-                ctx.accounts.obligation.to_account_info(),
-                ctx.accounts.lending_market_authority.to_account_info(),
-                ctx.accounts.reserve.to_account_info(),
-                ctx.accounts.reserve_farm_state.to_account_info(),
-                ctx.accounts.obligation_farm.to_account_info(),
-                ctx.accounts.lending_market.to_account_info(),
-                ctx.accounts.farms_program.to_account_info(),
-                ctx.accounts.rent.to_account_info(),
-                ctx.accounts.system_program.to_account_info(),
+                accounts[9].clone(),
+                accounts[10].clone(),
+                accounts[11].clone(),
+                accounts[12].clone(),
+                accounts[13].clone(),
+                accounts[14].clone(),
+                accounts[15].clone(),
+                accounts[16].clone(),
+                accounts[17].clone(),
+                accounts[18].clone(),
+                accounts[19].clone(),
             ],
         )?;
 
         // Step 3: Refresh Reserve
         invoke(
-            &refresh_reserve_instruction(&ctx.accounts.kamino_program.key(), &ctx.accounts),
+            &refresh_reserve_instruction(&ctx.accounts.kamino_program.key(), accounts),
             &[
-                ctx.accounts.reserve.to_account_info(),
-                ctx.accounts.lending_market.to_account_info(),
-                ctx.accounts.pyth_oracle.to_account_info(),
-                ctx.accounts.switchboard_price_oracle.to_account_info(),
-                ctx.accounts.switchboard_twap_oracle.to_account_info(),
-                ctx.accounts.scope_prices.to_account_info(),
+                accounts[20].clone(),
+                accounts[21].clone(),
+                accounts[22].clone(),
+                accounts[23].clone(),
+                accounts[24].clone(),
             ],
         )?;
 
         // Step 4: Refresh Obligation
         invoke(
-            &refresh_obligation_instruction(&ctx.accounts.kamino_program.key(), &ctx.accounts),
-            &[
-                ctx.accounts.lending_market.to_account_info(),
-                ctx.accounts.obligation.to_account_info(),
-            ],
+            &refresh_obligation_instruction(&ctx.accounts.kamino_program.key(), accounts),
+            &[accounts[25].clone(), accounts[26].clone()],
         )?;
 
         // Step 5: Deposit Reserve Liquidity and Obligation Collateral
         invoke(
             &deposit_reserve_liquidity_and_obligation_collateral_instruction(
                 &ctx.accounts.kamino_program.key(),
-                &ctx.accounts,
+                accounts,
                 amount,
             ),
             &[
-                ctx.accounts.owner.to_account_info(),
-                ctx.accounts.obligation.to_account_info(),
-                ctx.accounts.lending_market.to_account_info(),
-                ctx.accounts.lending_market_authority.to_account_info(),
-                ctx.accounts.reserve.to_account_info(),
-                ctx.accounts.reserve_liquidity_mint.to_account_info(),
-                ctx.accounts.reserve_liquidity_supply.to_account_info(),
-                ctx.accounts.reserve_collateral_mint.to_account_info(),
-                ctx.accounts
-                    .reserve_destination_deposit_collateral
-                    .to_account_info(),
-                ctx.accounts.user_source_liquidity.to_account_info(),
-                ctx.accounts
-                    .placeholder_user_destination_collateral
-                    .to_account_info(),
-                ctx.accounts.collateral_token_program.to_account_info(),
-                ctx.accounts.liquidity_token_program.to_account_info(),
-                ctx.accounts.instruction_sysvar.to_account_info(),
+                accounts[27].clone(),
+                accounts[28].clone(),
+                accounts[29].clone(),
+                accounts[30].clone(),
+                accounts[31].clone(),
+                accounts[32].clone(),
+                accounts[33].clone(),
+                accounts[34].clone(),
+                accounts[35].clone(),
+                accounts[36].clone(),
+                accounts[37].clone(),
+                accounts[38].clone(),
+                accounts[39].clone(),
+                accounts[40].clone(),
             ],
         )?;
 
@@ -105,19 +99,20 @@ pub mod kamino_deposit {
         invoke(
             &refresh_obligation_farms_for_reserve_instruction(
                 &ctx.accounts.kamino_farm.key(),
-                &ctx.accounts,
+                accounts,
+                0,
             ),
             &[
-                ctx.accounts.crank.to_account_info(),
-                ctx.accounts.obligation.to_account_info(),
-                ctx.accounts.lending_market_authority.to_account_info(),
-                ctx.accounts.reserve.to_account_info(),
-                ctx.accounts.reserve_farm_state.to_account_info(),
-                ctx.accounts.obligation_farm_user_state.to_account_info(),
-                ctx.accounts.lending_market.to_account_info(),
-                ctx.accounts.farms_program.to_account_info(),
-                ctx.accounts.rent.to_account_info(),
-                ctx.accounts.system_program.to_account_info(),
+                accounts[41].clone(),
+                accounts[42].clone(),
+                accounts[43].clone(),
+                accounts[44].clone(),
+                accounts[45].clone(),
+                accounts[46].clone(),
+                accounts[47].clone(),
+                accounts[48].clone(),
+                accounts[49].clone(),
+                accounts[50].clone(),
             ],
         )?;
 
@@ -127,131 +122,79 @@ pub mod kamino_deposit {
 
 #[derive(Accounts)]
 pub struct ExecuteKaminoOperations<'info> {
-    // Init Obligation Accounts
-    #[account(mut)]
-    pub obligation_owner: Signer<'info>,
-    #[account(mut)]
-    pub fee_payer: Signer<'info>,
-    ///CHECK
-    #[account(mut)]
-    pub obligation: AccountInfo<'info>,
-    #[account(mut)]
-    pub lending_market: AccountInfo<'info>,
-    #[account(mut)]
-    pub owner_user_metadata: AccountInfo<'info>,
-    #[account(mut)]
-    pub rent: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
-
-    // Init Obligation Farms for Reserve Accounts
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account(mut)]
-    pub owner: Signer<'info>,
-    #[account(mut)]
-    pub lending_market_authority: AccountInfo<'info>,
-    #[account(mut)]
-    pub reserve: AccountInfo<'info>,
-    #[account(mut)]
-    pub reserve_farm_state: AccountInfo<'info>,
-    #[account(mut)]
-    pub obligation_farm: AccountInfo<'info>,
-    pub farms_program: AccountInfo<'info>,
-
-    // Refresh Reserve Accounts
-    #[account(mut)]
-    pub pyth_oracle: AccountInfo<'info>,
-    #[account(mut)]
-    pub switchboard_price_oracle: AccountInfo<'info>,
-    #[account(mut)]
-    pub switchboard_twap_oracle: AccountInfo<'info>,
-    #[account(mut)]
-    pub scope_prices: AccountInfo<'info>,
-
-    // Deposit Reserve Liquidity and Obligation Collateral Accounts
-    #[account(mut)]
-    pub reserve_liquidity_mint: AccountInfo<'info>,
-    #[account(mut)]
-    pub reserve_liquidity_supply: AccountInfo<'info>,
-    #[account(mut)]
-    pub reserve_collateral_mint: AccountInfo<'info>,
-    #[account(mut)]
-    pub reserve_destination_deposit_collateral: AccountInfo<'info>,
-    #[account(mut)]
-    pub user_source_liquidity: Account<'info, TokenAccount>,
-    #[account(mut)]
-    pub placeholder_user_destination_collateral: AccountInfo<'info>,
-    pub collateral_token_program: Program<'info, Token>,
-    pub liquidity_token_program: Program<'info, Token>,
-    pub instruction_sysvar: AccountInfo<'info>,
-
     // Kamino Lending Program
     pub kamino_program: AccountInfo<'info>,
 
     // Kamino Farm Program
     pub kamino_farm: AccountInfo<'info>,
-
-    pub crank: AccountInfo<'info>,
-    pub obligation_farm_user_state: AccountInfo<'info>,
 }
 
 fn init_obligation_instruction(
     kamino_program_id: &Pubkey,
-    accounts: &ExecuteKaminoOperations,
+    accounts: &[AccountInfo],
+    amount: u64,
 ) -> Instruction {
     Instruction {
         program_id: *kamino_program_id,
         accounts: vec![
-            AccountMeta::new(accounts.obligation_owner.key(), true),
-            AccountMeta::new(accounts.fee_payer.key(), true),
-            AccountMeta::new(accounts.obligation.key(), false),
-            AccountMeta::new(accounts.lending_market.key(), false),
-            AccountMeta::new(accounts.system_program.key(), false),
-            AccountMeta::new(accounts.system_program.key(), false),
-            AccountMeta::new(accounts.owner_user_metadata.key(), false),
-            AccountMeta::new_readonly(accounts.rent.key(), false),
-            AccountMeta::new_readonly(accounts.system_program.key(), false),
+            AccountMeta::new(accounts[0].key(), true),
+            AccountMeta::new(accounts[1].key(), true),
+            AccountMeta::new(accounts[2].key(), false),
+            AccountMeta::new(accounts[3].key(), false),
+            AccountMeta::new(accounts[4].key(), false),
+            AccountMeta::new(accounts[5].key(), false),
+            AccountMeta::new(accounts[6].key(), false),
+            AccountMeta::new_readonly(accounts[7].key(), false),
+            AccountMeta::new_readonly(accounts[8].key(), false),
         ],
-        data: vec![0x00],
+        data: {
+            let mut data = vec![0x00];
+            data.extend_from_slice(&amount.to_le_bytes());
+            data
+        },
     }
 }
 
 fn init_obligation_farms_for_reserve_instruction(
     kamino_farm_id: &Pubkey,
-    accounts: &ExecuteKaminoOperations,
+    accounts: &[AccountInfo],
+    mode: u8,
 ) -> Instruction {
     Instruction {
         program_id: *kamino_farm_id,
         accounts: vec![
-            AccountMeta::new(accounts.payer.key(), true),
-            AccountMeta::new(accounts.owner.key(), true),
-            AccountMeta::new(accounts.obligation.key(), false),
-            AccountMeta::new(accounts.lending_market_authority.key(), false),
-            AccountMeta::new(accounts.reserve.key(), false),
-            AccountMeta::new(accounts.reserve_farm_state.key(), false),
-            AccountMeta::new(accounts.obligation_farm.key(), false),
-            AccountMeta::new(accounts.lending_market.key(), false),
-            AccountMeta::new(accounts.farms_program.key(), false),
-            AccountMeta::new_readonly(accounts.rent.key(), false),
-            AccountMeta::new_readonly(accounts.system_program.key(), false),
+            AccountMeta::new(accounts[9].key(), true),
+            AccountMeta::new(accounts[10].key(), true),
+            AccountMeta::new(accounts[11].key(), false),
+            AccountMeta::new(accounts[12].key(), false),
+            AccountMeta::new(accounts[13].key(), false),
+            AccountMeta::new(accounts[14].key(), false),
+            AccountMeta::new(accounts[15].key(), false),
+            AccountMeta::new(accounts[16].key(), false),
+            AccountMeta::new(accounts[17].key(), false),
+            AccountMeta::new_readonly(accounts[18].key(), false),
+            AccountMeta::new_readonly(accounts[19].key(), false),
         ],
-        data: vec![0x01],
+        data: {
+            let mut data = vec![0x01];
+            data.push(mode);
+            data
+        },
     }
 }
 
 fn refresh_reserve_instruction(
     kamino_program_id: &Pubkey,
-    accounts: &ExecuteKaminoOperations,
+    accounts: &[AccountInfo],
 ) -> Instruction {
     Instruction {
         program_id: *kamino_program_id,
         accounts: vec![
-            AccountMeta::new(accounts.reserve.key(), false),
-            AccountMeta::new(accounts.lending_market.key(), false),
-            AccountMeta::new(accounts.pyth_oracle.key(), false),
-            AccountMeta::new(accounts.switchboard_price_oracle.key(), false),
-            AccountMeta::new(accounts.switchboard_twap_oracle.key(), false),
-            AccountMeta::new(accounts.scope_prices.key(), false),
+            AccountMeta::new(accounts[20].key(), false),
+            AccountMeta::new(accounts[21].key(), false),
+            AccountMeta::new(accounts[22].key(), false),
+            AccountMeta::new(accounts[23].key(), false),
+            AccountMeta::new(accounts[24].key(), false),
         ],
         data: vec![0x02],
     }
@@ -259,69 +202,71 @@ fn refresh_reserve_instruction(
 
 fn refresh_obligation_instruction(
     kamino_program_id: &Pubkey,
-    accounts: &ExecuteKaminoOperations,
+    accounts: &[AccountInfo],
 ) -> Instruction {
     Instruction {
         program_id: *kamino_program_id,
         accounts: vec![
-            AccountMeta::new(accounts.lending_market.key(), false),
-            AccountMeta::new(accounts.obligation.key(), false),
+            AccountMeta::new(accounts[25].key(), false),
+            AccountMeta::new(accounts[26].key(), false),
         ],
         data: vec![0x03],
     }
 }
 
-fn refresh_obligation_farms_for_reserve_instruction(
-    kamino_farm_id: &Pubkey,
-    accounts: &ExecuteKaminoOperations,
-) -> Instruction {
-    Instruction {
-        program_id: *kamino_farm_id,
-        accounts: vec![
-            AccountMeta::new(accounts.crank.key(), true),
-            AccountMeta::new(accounts.obligation.key(), false),
-            AccountMeta::new(accounts.lending_market_authority.key(), false),
-            AccountMeta::new(accounts.reserve.key(), false),
-            AccountMeta::new(accounts.reserve_farm_state.key(), false),
-            AccountMeta::new(accounts.obligation_farm_user_state.key(), false),
-            AccountMeta::new(accounts.lending_market.key(), false),
-            AccountMeta::new(accounts.farms_program.key(), false),
-            AccountMeta::new_readonly(accounts.rent.key(), false),
-            AccountMeta::new_readonly(accounts.system_program.key(), false),
-        ],
-        data: vec![0x05],
-    }
-}
-
 fn deposit_reserve_liquidity_and_obligation_collateral_instruction(
     kamino_program_id: &Pubkey,
-    accounts: &ExecuteKaminoOperations,
+    accounts: &[AccountInfo],
     amount: u64,
 ) -> Instruction {
     Instruction {
         program_id: *kamino_program_id,
         accounts: vec![
-            AccountMeta::new(accounts.owner.key(), true),
-            AccountMeta::new(accounts.obligation.key(), false),
-            AccountMeta::new(accounts.lending_market.key(), false),
-            AccountMeta::new(accounts.lending_market_authority.key(), false),
-            AccountMeta::new(accounts.reserve.key(), false),
-            AccountMeta::new(accounts.reserve_liquidity_mint.key(), false),
-            AccountMeta::new(accounts.reserve_liquidity_supply.key(), false),
-            AccountMeta::new(accounts.reserve_collateral_mint.key(), false),
-            AccountMeta::new(accounts.reserve_destination_deposit_collateral.key(), false),
-            AccountMeta::new(accounts.user_source_liquidity.key(), false),
-            AccountMeta::new(
-                accounts.placeholder_user_destination_collateral.key(),
-                false,
-            ),
-            AccountMeta::new_readonly(accounts.collateral_token_program.key(), false),
-            AccountMeta::new_readonly(accounts.liquidity_token_program.key(), false),
-            AccountMeta::new_readonly(accounts.instruction_sysvar.key(), false),
+            AccountMeta::new(accounts[27].key(), true),
+            AccountMeta::new(accounts[28].key(), false),
+            AccountMeta::new(accounts[29].key(), false),
+            AccountMeta::new(accounts[30].key(), false),
+            AccountMeta::new(accounts[31].key(), false),
+            AccountMeta::new(accounts[32].key(), false),
+            AccountMeta::new(accounts[33].key(), false),
+            AccountMeta::new(accounts[34].key(), false),
+            AccountMeta::new(accounts[35].key(), false),
+            AccountMeta::new(accounts[36].key(), false),
+            AccountMeta::new(accounts[37].key(), false),
+            AccountMeta::new_readonly(accounts[38].key(), false),
+            AccountMeta::new_readonly(accounts[39].key(), false),
+            AccountMeta::new_readonly(accounts[40].key(), false),
         ],
         data: {
             let mut data = vec![0x04];
             data.extend_from_slice(&amount.to_le_bytes());
+            data
+        },
+    }
+}
+
+fn refresh_obligation_farms_for_reserve_instruction(
+    kamino_farm_id: &Pubkey,
+    accounts: &[AccountInfo],
+    mode: u8,
+) -> Instruction {
+    Instruction {
+        program_id: *kamino_farm_id,
+        accounts: vec![
+            AccountMeta::new(accounts[41].key(), true),
+            AccountMeta::new(accounts[42].key(), false),
+            AccountMeta::new(accounts[43].key(), false),
+            AccountMeta::new(accounts[44].key(), false),
+            AccountMeta::new(accounts[45].key(), false),
+            AccountMeta::new(accounts[46].key(), false),
+            AccountMeta::new(accounts[47].key(), false),
+            AccountMeta::new(accounts[48].key(), false),
+            AccountMeta::new_readonly(accounts[49].key(), false),
+            AccountMeta::new_readonly(accounts[50].key(), false),
+        ],
+        data: {
+            let mut data = vec![0x05];
+            data.push(mode);
             data
         },
     }
