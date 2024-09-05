@@ -10,13 +10,17 @@ pub mod kamino_deposit {
 
     pub fn execute_kamino_operations(
         ctx: Context<ExecuteKaminoOperations>,
-        amount: u64,
+        ix_datas: Vec<Vec<u8>>,
     ) -> Result<()> {
         let accounts = &ctx.remaining_accounts;
 
         // Step 1: Init Obligation
         invoke(
-            &init_obligation_instruction(&ctx.accounts.kamino_program.key(), accounts, amount),
+            &init_obligation_instruction(
+                &ctx.accounts.kamino_program.key(),
+                accounts,
+                ix_datas[0].clone(),
+            ),
             &[
                 accounts[0].clone(),
                 accounts[1].clone(),
@@ -132,7 +136,7 @@ pub struct ExecuteKaminoOperations<'info> {
 fn init_obligation_instruction(
     kamino_program_id: &Pubkey,
     accounts: &[AccountInfo],
-    amount: u64,
+    data: Vec<u8>,
 ) -> Instruction {
     Instruction {
         program_id: *kamino_program_id,
@@ -147,11 +151,7 @@ fn init_obligation_instruction(
             AccountMeta::new_readonly(accounts[7].key(), false),
             AccountMeta::new_readonly(accounts[8].key(), false),
         ],
-        data: {
-            let mut data = vec![0x00];
-            data.extend_from_slice(&amount.to_le_bytes());
-            data
-        },
+        data,
     }
 }
 
