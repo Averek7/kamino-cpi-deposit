@@ -58,36 +58,34 @@ describe("Exec Kamino", () => {
         true
       );
 
-      console.log(kaminoAction.preTxnIxs); // directly send this to blockchain
-
       console.log("Setup Instructions:", kaminoAction.setupIxs);
       //   console.log("Lending Instructions:", kaminoAction.lendingIxs);
       //   console.log("Cleanup Instructions:", kaminoAction.cleanupIxs);
 
-      const allAccountMetas = [
+      const allInstructions = [
         ...kaminoAction.setupIxs,
         ...kaminoAction.lendingIxs,
         ...kaminoAction.cleanupIxs,
       ];
 
-      //   const setupIxData = kaminoAction.setupIxs[0]?.data;
-      //   const amountBuffer = setupIxData.slice(0, 8);
-      //   const amount = new BN(amountBuffer, "be");
+      const kaminoIxs = allInstructions.filter((ix) =>
+        ix.programId.equals(KAMINO_PROGRAM)
+      );
 
-      // Send transaction using anchor program
+      const allAccountMetas = kaminoIxs.flatMap((ix) => ix.keys);
+
+      console.log(allAccountMetas.length);
+
+      const ixDatas: Buffer[] = kaminoIxs.map((ix) => ix.data);
+
+      console.log(ixDatas.length);
+
       const txn = await program.methods
-        .executeKaminoOperations(depositAmount)
+        .executeKaminoOperations(ixDatas)
         .accounts({
-          kaminoFarm: FARM,
           kaminoProgram: KAMINO_PROGRAM,
         })
-        .remainingAccounts(
-          allAccountMetas.map((ix, idx) => ({
-            pubkey: ix.keys[idx]?.pubkey,
-            isSigner: ix.keys[idx]?.isSigner,
-            isWritable: ix.keys[idx]?.isWritable,
-          }))
-        )
+        .remainingAccounts(allAccountMetas)
         .signers([payer])
         .rpc();
 
