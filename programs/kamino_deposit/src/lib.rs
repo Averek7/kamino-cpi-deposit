@@ -13,9 +13,13 @@ pub mod kamino_deposit {
         data: Vec<Vec<u8>>,
     ) -> Result<()> {
         let accounts = &ctx.remaining_accounts;
-        
+
         invoke(
-            &initiate_ixns(&ctx.accounts.kamino_program.key(), accounts, data[0].clone()),
+            &initiate_ixns(
+                &ctx.accounts.kamino_program.key(),
+                accounts,
+                data[0].clone(),
+            ),
             &[
                 accounts[0].clone(),
                 accounts[1].clone(),
@@ -26,10 +30,13 @@ pub mod kamino_deposit {
             ],
         )?;
 
-
         // Step 1: Init Obligation
         invoke(
-            &init_obligation_instruction(&ctx.accounts.kamino_program.key(), accounts, data[1].clone()),
+            &init_obligation_instruction(
+                &ctx.accounts.kamino_program.key(),
+                accounts,
+                data[1].clone(),
+            ),
             &[
                 accounts[6].clone(),
                 accounts[7].clone(),
@@ -67,7 +74,11 @@ pub mod kamino_deposit {
 
         // Step 3: Refresh Reserve
         invoke(
-            &refresh_reserve_instruction(&ctx.accounts.kamino_program.key(), accounts, data[3].clone()),
+            &refresh_reserve_instruction(
+                &ctx.accounts.kamino_program.key(),
+                accounts,
+                data[3].clone(),
+            ),
             &[
                 accounts[26].clone(),
                 accounts[27].clone(),
@@ -80,7 +91,11 @@ pub mod kamino_deposit {
 
         // Step 4: Refresh Obligation
         invoke(
-            &refresh_obligation_instruction(&ctx.accounts.kamino_program.key(), accounts, data[4].clone()),
+            &refresh_obligation_instruction(
+                &ctx.accounts.kamino_program.key(),
+                accounts,
+                data[4].clone(),
+            ),
             &[accounts[32].clone(), accounts[33].clone()],
         )?;
 
@@ -165,7 +180,6 @@ fn initiate_ixns(
     accounts: &[AccountInfo],
     data: Vec<u8>,
 ) -> Instruction {
-    let (discriminator, rest) = data.split_at(8);
 
     Instruction {
         program_id: *kamino_program_id,
@@ -177,22 +191,15 @@ fn initiate_ixns(
             AccountMeta::new_readonly(accounts[4].key(), false),
             AccountMeta::new_readonly(accounts[5].key(), false),
         ],
-        data: {
-            let mut instruction_data = vec![];
-            instruction_data.extend_from_slice(discriminator); 
-            instruction_data.extend_from_slice(rest); 
-            instruction_data
-        },
+        data,
     }
 }
-
 
 fn init_obligation_instruction(
     kamino_program_id: &Pubkey,
     accounts: &[AccountInfo],
     data: Vec<u8>,
 ) -> Instruction {
-    let (discriminator, rest) = data.split_at(8);
 
     Instruction {
         program_id: *kamino_program_id,
@@ -207,12 +214,7 @@ fn init_obligation_instruction(
             AccountMeta::new_readonly(accounts[13].key(), false),
             AccountMeta::new_readonly(accounts[14].key(), false),
         ],
-        data: {
-            let mut instruction_data = vec![];
-            instruction_data.extend_from_slice(discriminator); 
-            instruction_data.extend_from_slice(rest); 
-            instruction_data
-        },
+        data,
     }
 }
 
@@ -221,7 +223,6 @@ fn init_obligation_farms_for_reserve_instruction(
     accounts: &[AccountInfo],
     data: Vec<u8>,
 ) -> Instruction {
-    let (discriminator, rest) = data.split_at(8);
 
     Instruction {
         program_id: *kamino_program_id,
@@ -237,14 +238,8 @@ fn init_obligation_farms_for_reserve_instruction(
             AccountMeta::new_readonly(accounts[23].key(), false),
             AccountMeta::new_readonly(accounts[24].key(), false),
             AccountMeta::new_readonly(accounts[25].key(), false),
-
         ],
-        data: {
-            let mut instruction_data = vec![];
-            instruction_data.extend_from_slice(discriminator); 
-            instruction_data.extend_from_slice(rest); 
-            instruction_data
-        },
+        data,
     }
 }
 
@@ -253,7 +248,6 @@ fn refresh_reserve_instruction(
     accounts: &[AccountInfo],
     data: Vec<u8>,
 ) -> Instruction {
-    let (discriminator, rest) = data.split_at(8);
 
     Instruction {
         program_id: *kamino_program_id,
@@ -265,12 +259,8 @@ fn refresh_reserve_instruction(
             AccountMeta::new_readonly(accounts[30].key(), false),
             AccountMeta::new_readonly(accounts[31].key(), false),
         ],
-        data: {
-            let mut instruction_data = vec![];
-            instruction_data.extend_from_slice(discriminator); 
-            instruction_data.extend_from_slice(rest); 
-            instruction_data
-        },    }
+        data,
+    }
 }
 
 fn refresh_obligation_instruction(
@@ -278,7 +268,6 @@ fn refresh_obligation_instruction(
     accounts: &[AccountInfo],
     data: Vec<u8>,
 ) -> Instruction {
-    let (discriminator, rest) = data.split_at(8);
 
     Instruction {
         program_id: *kamino_program_id,
@@ -286,12 +275,7 @@ fn refresh_obligation_instruction(
             AccountMeta::new_readonly(accounts[32].key(), false),
             AccountMeta::new(accounts[33].key(), false),
         ],
-        data: {
-            let mut instruction_data = vec![];
-            instruction_data.extend_from_slice(discriminator); 
-            instruction_data.extend_from_slice(rest); 
-            instruction_data
-        },
+        data,
     }
 }
 
@@ -300,7 +284,6 @@ fn deposit_reserve_liquidity_and_obligation_collateral_instruction(
     accounts: &[AccountInfo],
     data: Vec<u8>,
 ) -> Instruction {
-    let (discriminator, rest) = data.split_at(8);
     Instruction {
         program_id: *kamino_program_id,
         accounts: vec![
@@ -319,12 +302,7 @@ fn deposit_reserve_liquidity_and_obligation_collateral_instruction(
             AccountMeta::new_readonly(accounts[56].key(), false),
             AccountMeta::new_readonly(accounts[57].key(), true),
         ],
-        data: {
-            let mut instruction_data = vec![];
-            instruction_data.extend_from_slice(discriminator); 
-            instruction_data.extend_from_slice(rest); 
-            instruction_data
-        },
+        data,
     }
 }
 
@@ -333,7 +311,6 @@ fn refresh_obligation_farms_for_reserve_instruction(
     accounts: &[AccountInfo],
     data: Vec<u8>,
 ) -> Instruction {
-    let (discriminator, rest) = data.split_at(8);
     Instruction {
         program_id: *kamino_program_id,
         accounts: vec![
@@ -348,11 +325,6 @@ fn refresh_obligation_farms_for_reserve_instruction(
             AccountMeta::new_readonly(accounts[42].key(), false),
             AccountMeta::new_readonly(accounts[43].key(), false),
         ],
-        data: {
-            let mut instruction_data = vec![];
-            instruction_data.extend_from_slice(discriminator); 
-            instruction_data.extend_from_slice(rest); 
-            instruction_data
-        },
+        data,
     }
 }
